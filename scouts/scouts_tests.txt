@@ -1,0 +1,21 @@
+test: first two turns
+player1: place_scout 0,9
+player2: place_scout 0,0
+expect: true
+
+test: normal game
+player1: place_scout 0,9
+player2: place_scout 0,0
+player1: place_scout 1,9
+player2: place_scout 1,0
+player1: place_scout 2,9
+player2: place_scout 2,0
+player1: place_scout 3,9
+player2: place_scout 3,0
+player1: place_scout 4,9
+player2: place_scout 4,0
+player1: dash 0,9 1,8
+player2: dash 4,0 3,1; skip
+player1: jump 1,9 1,7; skip
+player2: jump 3,0 3,2; skip
+expect: true
