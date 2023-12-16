@@ -60,10 +60,23 @@ func (p *ScoutPiece) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func (p *ScoutPiece) winsGame() bool {
+	return p.returning && IsPlayerBase(p.player, p.position)
+}
+
 // BoulderPiece is a type that represents a boulder piece on the board.
 type BoulderPiece struct {
 	position [4]image.Point
 	player   Player
+}
+
+func boulderPiecePosition(topLeft image.Point) [4]image.Point {
+	return [4]image.Point{
+		topLeft,
+		topLeft.Add(image.Point{1, 0}),
+		topLeft.Add(image.Point{0, 1}),
+		topLeft.Add(image.Point{1, 1}),
+	}
 }
 
 // Kind returns the kind of the piece.

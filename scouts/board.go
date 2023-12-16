@@ -9,6 +9,22 @@ import (
 // BoardBounds is the size of the board.
 var BoardBounds = image.Rect(0, 0, 8, 10)
 
+var playerABaseY = BoardBounds.Max.Y - 1
+var playerBBaseY = BoardBounds.Min.Y
+
+// IsPlayerBase returns whether the given point is on the base of the given
+// player.
+func IsPlayerBase(player Player, pt image.Point) bool {
+	switch player {
+	case PlayerA:
+		return pt.Y == BoardBounds.Max.Y-1
+	case PlayerB:
+		return pt.Y == BoardBounds.Min.Y
+	default:
+		panic("invalid player")
+	}
+}
+
 // Board is a type that represents the board. Player A is at the bottom of the
 // board and player B is at the top of the board.
 // It exposes no methods for modifying the board, only for reading it.
@@ -76,19 +92,6 @@ func (b *Board) PointIsPiece(p image.Point, kind PieceKind) bool {
 		return piece == nil
 	}
 	return piece != nil && piece.Kind() == kind
-}
-
-// IsPlayerBase returns whether the given point is on the base of the given
-// player.
-func (b *Board) IsPlayerBase(player Player, pt image.Point) bool {
-	switch player {
-	case PlayerA:
-		return pt.Y == 9
-	case PlayerB:
-		return pt.Y == 0
-	default:
-		panic("invalid player")
-	}
 }
 
 func (b *Board) updatePiece(p Piece) {

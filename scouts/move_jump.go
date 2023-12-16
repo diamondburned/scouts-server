@@ -65,24 +65,26 @@ func (m *JumpMove) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Apply applies the move to the board.
-func (m *JumpMove) apply(game *Game) error {
-	if game.currentState != gameStatePlay {
-		return errStillPlacingScouts
-	}
-
-	cost := 1
+func (m *JumpMove) cost(game *Game) int {
 	if len(game.currentTurn.Moves) > 0 {
 		lastMove := game.currentTurn.Moves[len(game.currentTurn.Moves)-1]
 		if jump, ok := lastMove.(*JumpMove); ok && jump.Destination == m.ScoutPosition {
 			// This jump is free because we're jumping the same scout as the last
 			// jump.
-			cost = 0
+			return 0
 		}
+	}
+	return 1
+}
+
+// Apply applies the move to the board.
+func (m *JumpMove) validate(game *Game) error {
+	if game.currentState != gameStatePlay {
+		return errStillPlacingScouts
 	}
 
 	// Assert that the player has enough plays.
-	if !game.currentTurn.hasEnoughPlays(cost) {
+	if !game.currentTurn.hasEnoughPlays(m.cost(game)) {
 		return errNotEnoughPlays
 	}
 
@@ -128,17 +130,23 @@ func (m *JumpMove) apply(game *Game) error {
 		})
 	}
 
+	return nil
+}
+
+func (m *JumpMove) apply(game *Game) {
 	scoutPiece := game.board.PieceAt(m.ScoutPosition).(*ScoutPiece)
 	scoutPiece.position = m.Destination
 
-	if !scoutPiece.returning && game.board.IsPlayerBase(game.currentTurn.Player.Opponent(), m.Destination) {
+	if !scoutPiece.returning && IsPlayerBase(game.currentTurn.Player.Opponent(), m.Destination) {
 		scoutPiece.returning = true
 	}
 
 	game.board.updatePiece(scoutPiece)
-	game.addMove(m, cost)
+	game.addMove(m, m.cost(game))
 
-	return nil
+	if scoutPiece.winsGame() {
+		game.currentState = gameStateEnd
+	}
 }
 
 func abs[T constraints.Integer](x T) T {

@@ -58,7 +58,7 @@ func (m *BoulderMove) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (m *BoulderMove) apply(game *Game) error {
+func (m *BoulderMove) validate(game *Game) error {
 	if game.currentState != gameStatePlay {
 		return errStillPlacingScouts
 	}
@@ -83,19 +83,20 @@ func (m *BoulderMove) apply(game *Game) error {
 		}
 	}
 
-	placedBoulderIx := int(game.currentTurn.Player) - 1
-	if game.placedBoulders[placedBoulderIx] {
+	if game.playerPlacedBoulder(game.currentTurn.Player) {
 		return errAlreadyPlacedBoulder
 	}
 
+	return nil
+}
+
+func (m *BoulderMove) apply(game *Game) {
 	boulderPiece := &BoulderPiece{
 		player:   game.currentTurn.Player,
-		position: position,
+		position: boulderPiecePosition(m.TopLeft),
 	}
 
-	game.placedBoulders[placedBoulderIx] = true
 	game.board.updatePiece(boulderPiece)
+	game.playerPlaceBoulder(game.currentTurn.Player)
 	game.addMove(m, 1)
-
-	return nil
 }

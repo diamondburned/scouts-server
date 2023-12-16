@@ -33,6 +33,20 @@ func (e UnexpectedPieceError) Error() string {
 	)
 }
 
+// UnexpectedGameStateError is an error that is returned when the game state is
+// not the expected game state.
+type UnexpectedGameStateError struct {
+	Expected gameState `json:"expected"`
+	Actual   gameState `json:"actual"`
+}
+
+func (e UnexpectedGameStateError) Error() string {
+	return fmt.Sprintf(
+		"expected game state %s, got %s",
+		e.Expected, e.Actual,
+	)
+}
+
 func parsePoint(str string) (image.Point, error) {
 	var p image.Point
 	_, err := fmt.Sscanf(str, "%d,%d", &p.X, &p.Y)
@@ -51,7 +65,8 @@ type Move interface {
 	// Type returns the move type.
 	Type() MoveType
 
-	apply(*Game) error
+	validate(*Game) error
+	apply(*Game)
 }
 
 // ParseMove parses a move from a string.
@@ -76,6 +91,11 @@ func ParseMove(s string) (Move, error) {
 		return nil, fmt.Errorf("invalid %s move: %v", arg0, err)
 	}
 	return move, nil
+}
+
+func moveIsEq(move1, move2 Move) bool {
+	// Tell no one about this.
+	return move1.String() == move2.String()
 }
 
 // Moves is a list of moves.

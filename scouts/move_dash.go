@@ -1,10 +1,13 @@
 package scouts
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"strings"
 )
+
+var errDashTooFar = errors.New("cannot dash more than 1 unit at a time")
 
 const DashMoveType MoveType = "dash"
 
@@ -61,9 +64,12 @@ func (m *DashMove) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (m *DashMove) apply(game *Game) error {
+func (m *DashMove) validate(game *Game) error {
 	if game.currentState != gameStatePlay {
-		return errStillPlacingScouts
+		return fmt.Errorf("cannot dash piece: %w", UnexpectedGameStateError{
+			Expected: gameStatePlay,
+			Actual:   game.currentState,
+		})
 	}
 
 	if !game.currentTurn.hasEnoughPlays(1) {
@@ -86,15 +92,29 @@ func (m *DashMove) apply(game *Game) error {
 		})
 	}
 
+	dashingDistance := image.Rectangle{
+		Min: m.ScoutPosition,
+		Max: m.Destination,
+	}.Size()
+	if abs(dashingDistance.X) > 1 || abs(dashingDistance.Y) > 1 {
+		return errDashTooFar
+	}
+
+	return nil
+}
+
+func (m *DashMove) apply(game *Game) {
 	scoutPiece := game.board.PieceAt(m.ScoutPosition).(*ScoutPiece)
 	scoutPiece.position = m.Destination
 
-	if !scoutPiece.returning && game.board.IsPlayerBase(game.currentTurn.Player.Opponent(), m.Destination) {
+	if !scoutPiece.returning && IsPlayerBase(game.currentTurn.Player.Opponent(), m.Destination) {
 		scoutPiece.returning = true
 	}
 
 	game.board.updatePiece(scoutPiece)
 	game.addMove(m, 1)
 
-	return nil
+	if scoutPiece.winsGame() {
+		game.currentState = gameStateEnd
+	}
 }

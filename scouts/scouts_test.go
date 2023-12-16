@@ -2,6 +2,8 @@ package scouts
 
 import (
 	"fmt"
+	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -122,6 +124,11 @@ func TestGame(t *testing.T) {
 			g := NewGame()
 			for i, turn := range testCase.Turns {
 				for _, move := range turn.Moves {
+					possibleMoves := g.PossibleMoves(turn.Player)
+					t.Logf(
+						"possible moves for player %s on turn %d:\n%v",
+						turn.Player, i+1, possibleMoves)
+
 					if err := g.Apply(turn.Player, move); err != nil {
 						if testCase.Expect == ExpectingTrue {
 							t.Fatalf(
@@ -135,11 +142,33 @@ func TestGame(t *testing.T) {
 						}
 						return
 					}
+
 					t.Logf(
 						"applied turn %d, move %q for player %s:\n%s",
 						i+1, move, turn.Player, FormatBoard(g.Board()))
+
+					switch move := move.(type) {
+					case *BoulderMove:
+						if !possibleMoves.CanPlaceBoulder {
+							t.Fatalf(
+								"expected possible moves to allow placing boulder for player %s, but it didn't",
+								turn.Player)
+						}
+					default:
+						if !deepContains(possibleMoves.Moves, move) {
+							t.Fatalf(
+								"expected possible moves to contain %q for player %s, but it didn't",
+								move, turn.Player)
+						}
+					}
 				}
 			}
 		})
 	}
+}
+
+func deepContains[T any](slice []T, v T) bool {
+	return slices.ContainsFunc(slice, func(e T) bool {
+		return reflect.DeepEqual(e, v)
+	})
 }

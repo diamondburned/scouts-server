@@ -13,6 +13,19 @@ const (
 	gameStateEnd
 )
 
+func (s gameState) String() string {
+	switch s {
+	case gameStatePlaceScouts:
+		return "place scouts"
+	case gameStatePlay:
+		return "play"
+	case gameStateEnd:
+		return "end"
+	default:
+		return "unknown"
+	}
+}
+
 // Game is a game instance.
 type Game struct {
 	board          *Board
@@ -56,7 +69,11 @@ func (g *Game) Apply(p Player, move Move) error {
 	if g.currentTurn.Player != p {
 		return fmt.Errorf("it is not %v's turn", p)
 	}
-	return move.apply(g)
+	if err := move.validate(g); err != nil {
+		return err
+	}
+	move.apply(g)
+	return nil
 }
 
 // Board returns the board.
@@ -85,6 +102,11 @@ func (g *Game) PlayerPastTurns(p Player) []PastTurn {
 // CurrentTurn returns the current turn.
 func (g *Game) CurrentTurn() CurrentTurn {
 	return g.currentTurn
+}
+
+// PossibleMoves returns the possible moves for the given player.
+func (g *Game) PossibleMoves(p Player) PossibleMoves {
+	return calculatePossibleMoves(g, p)
 }
 
 // addMove adds the given move to the current turn. If the current turn is
@@ -116,4 +138,12 @@ func (g *Game) addEndMove(move Move, cost int) {
 	if !g.addMove(move, cost) {
 		panic("current turn is not complete")
 	}
+}
+
+func (g *Game) playerPlacedBoulder(p Player) bool {
+	return g.placedBoulders[int(p)-1]
+}
+
+func (g *Game) playerPlaceBoulder(p Player) {
+	g.placedBoulders[int(p)-1] = true
 }

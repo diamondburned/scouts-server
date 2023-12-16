@@ -46,7 +46,7 @@ func (m *PlaceScoutMove) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (m *PlaceScoutMove) apply(game *Game) error {
+func (m *PlaceScoutMove) validate(game *Game) error {
 	if !game.currentTurn.hasEnoughPlays(1) {
 		return errNotEnoughPlays
 	}
@@ -55,7 +55,7 @@ func (m *PlaceScoutMove) apply(game *Game) error {
 		return errHasPlacedAllScouts
 	}
 
-	if !game.board.IsPlayerBase(game.currentTurn.Player, m.ScoutPosition) {
+	if !IsPlayerBase(game.currentTurn.Player, m.ScoutPosition) {
 		return errCanOnlyPlaceAtBase
 	}
 
@@ -67,6 +67,10 @@ func (m *PlaceScoutMove) apply(game *Game) error {
 		})
 	}
 
+	return nil
+}
+
+func (m *PlaceScoutMove) apply(game *Game) {
 	piece := &ScoutPiece{
 		player:   game.currentTurn.Player,
 		position: m.ScoutPosition,
@@ -79,6 +83,4 @@ func (m *PlaceScoutMove) apply(game *Game) error {
 	if len(game.turns) == 10 {
 		game.currentState = gameStatePlay
 	}
-
-	return nil
 }

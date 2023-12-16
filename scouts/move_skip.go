@@ -30,7 +30,7 @@ func (m *SkipMove) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (m *SkipMove) apply(game *Game) error {
+func (m *SkipMove) validate(game *Game) error {
 	if !game.currentTurn.hasEnoughPlays(1) {
 		return errNotEnoughPlays
 	}
@@ -39,6 +39,9 @@ func (m *SkipMove) apply(game *Game) error {
 		return errStillPlacingScouts
 	}
 
-	game.addMove(m, 1)
 	return nil
+}
+
+func (m *SkipMove) apply(game *Game) {
+	game.addMove(m, 1)
 }
