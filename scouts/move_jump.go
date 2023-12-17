@@ -15,8 +15,8 @@ const JumpMoveType MoveType = "jump"
 // cardinal directions.
 // A jump move costs 0 plays, but later jumps must be made on the same scout.
 type JumpMove struct {
-	ScoutPosition image.Point `json:"scout_position"`
-	Destination   image.Point `json:"destination"`
+	ScoutPosition Point `json:"scout_position"`
+	Destination   Point `json:"destination"`
 }
 
 var _ Move = (*JumpMove)(nil)
@@ -50,17 +50,13 @@ func (m *JumpMove) UnmarshalText(text []byte) error {
 		return fmt.Errorf("expected %q move, got %q", JumpMoveType, parts[0])
 	}
 
-	p, err := parsePoint(parts[1])
-	if err != nil {
-		return err
+	if err := m.ScoutPosition.UnmarshalText([]byte(parts[1])); err != nil {
+		return fmt.Errorf("failed to unmarshal scout position: %w", err)
 	}
-	m.ScoutPosition = p
 
-	p, err = parsePoint(parts[2])
-	if err != nil {
-		return err
+	if err := m.Destination.UnmarshalText([]byte(parts[2])); err != nil {
+		return fmt.Errorf("failed to unmarshal destination: %w", err)
 	}
-	m.Destination = p
 
 	return nil
 }
@@ -98,10 +94,10 @@ func (m *JumpMove) validate(game *Game) error {
 		return errNotYourScout
 	}
 
-	jumpingDistance := image.Rectangle{
-		Min: m.ScoutPosition,
-		Max: m.Destination,
-	}.Size()
+	jumpingDistance := Point(image.Rectangle{
+		Min: image.Point(m.ScoutPosition),
+		Max: image.Point(m.Destination),
+	}.Size())
 	// Assert that the jump is in one of the four cardinal directions.
 	if jumpingDistance.X != 0 && jumpingDistance.Y != 0 {
 		return errInvalidJump

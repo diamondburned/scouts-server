@@ -2,7 +2,6 @@ package scouts
 
 import (
 	"fmt"
-	"image"
 	"strings"
 )
 
@@ -11,7 +10,7 @@ const PlaceScoutMoveType MoveType = "place_scout"
 // PlaceScoutMove represents a place scout move.
 // Each player must place 5 scouts on their base before the game begins.
 type PlaceScoutMove struct {
-	ScoutPosition image.Point `json:"scout_position"`
+	ScoutPosition Point `json:"scout_position"`
 }
 
 var _ Move = (*PlaceScoutMove)(nil)
@@ -38,11 +37,9 @@ func (m *PlaceScoutMove) UnmarshalText(text []byte) error {
 	if k != string(PlaceScoutMoveType) {
 		return fmt.Errorf("expected %q move, got %q", PlaceScoutMoveType, k)
 	}
-	p, err := parsePoint(v)
-	if err != nil {
-		return err
+	if err := m.ScoutPosition.UnmarshalText([]byte(v)); err != nil {
+		return fmt.Errorf("failed to unmarshal scout position: %w", err)
 	}
-	m.ScoutPosition = p
 	return nil
 }
 

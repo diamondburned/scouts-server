@@ -2,7 +2,6 @@ package scouts
 
 import (
 	"fmt"
-	"image"
 	"strings"
 )
 
@@ -16,7 +15,7 @@ const BoulderMoveType MoveType = "boulder"
 // A boulder is a 2x2 piece that cannot be moved.
 type BoulderMove struct {
 	// TopLeft is the top left position of the boulder.
-	TopLeft image.Point `json:"top_left"`
+	TopLeft Point `json:"top_left"`
 }
 
 var _ Move = (*BoulderMove)(nil)
@@ -49,11 +48,9 @@ func (m *BoulderMove) UnmarshalText(text []byte) error {
 		return fmt.Errorf("expected %q move, got %q", BoulderMoveType, parts[0])
 	}
 
-	p, err := parsePoint(parts[1])
-	if err != nil {
-		return err
+	if err := m.TopLeft.UnmarshalText([]byte(parts[1])); err != nil {
+		return fmt.Errorf("failed to unmarshal top left: %w", err)
 	}
-	m.TopLeft = p
 
 	return nil
 }
@@ -67,11 +64,11 @@ func (m *BoulderMove) validate(game *Game) error {
 		return errNotEnoughPlays
 	}
 
-	position := [4]image.Point{
+	position := [4]Point{
 		m.TopLeft,
-		m.TopLeft.Add(image.Point{1, 0}),
-		m.TopLeft.Add(image.Point{0, 1}),
-		m.TopLeft.Add(image.Point{1, 1}),
+		m.TopLeft.Add(Pt(1, 0)),
+		m.TopLeft.Add(Pt(0, 1)),
+		m.TopLeft.Add(Pt(1, 1)),
 	}
 	for _, p := range position {
 		if !game.board.PointIsPiece(p, NoPieceKind) {

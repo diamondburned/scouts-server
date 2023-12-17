@@ -14,8 +14,8 @@ const DashMoveType MoveType = "dash"
 // DashMove represents a dash move. A player may dash a scout in any direction
 // in 1 unit increments. The scout may not dash off the board.
 type DashMove struct {
-	ScoutPosition image.Point `json:"scout_position"`
-	Destination   image.Point `json:"destination"`
+	ScoutPosition Point `json:"scout_position"`
+	Destination   Point `json:"destination"`
 }
 
 var _ Move = (*DashMove)(nil)
@@ -49,17 +49,13 @@ func (m *DashMove) UnmarshalText(text []byte) error {
 		return fmt.Errorf("expected %q move, got %q", DashMoveType, parts[0])
 	}
 
-	p, err := parsePoint(parts[1])
-	if err != nil {
-		return err
+	if err := m.ScoutPosition.UnmarshalText([]byte(parts[1])); err != nil {
+		return fmt.Errorf("failed to unmarshal scout position: %w", err)
 	}
-	m.ScoutPosition = p
 
-	p, err = parsePoint(parts[2])
-	if err != nil {
-		return err
+	if err := m.Destination.UnmarshalText([]byte(parts[2])); err != nil {
+		return fmt.Errorf("failed to unmarshal destination: %w", err)
 	}
-	m.Destination = p
 
 	return nil
 }
@@ -92,10 +88,10 @@ func (m *DashMove) validate(game *Game) error {
 		})
 	}
 
-	dashingDistance := image.Rectangle{
-		Min: m.ScoutPosition,
-		Max: m.Destination,
-	}.Size()
+	dashingDistance := Point(image.Rectangle{
+		Min: image.Point(m.ScoutPosition),
+		Max: image.Point(m.Destination),
+	}.Size())
 	if abs(dashingDistance.X) > 1 || abs(dashingDistance.Y) > 1 {
 		return errDashTooFar
 	}

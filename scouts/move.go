@@ -3,7 +3,6 @@ package scouts
 import (
 	"encoding"
 	"fmt"
-	"image"
 	"strings"
 )
 
@@ -21,9 +20,9 @@ var (
 // UnexpectedPieceError is an error that is returned when a piece is not the
 // expected piece.
 type UnexpectedPieceError struct {
-	Position image.Point `json:"position"`
-	Expected PieceKind   `json:"expected"`
-	Actual   PieceKind   `json:"actual"`
+	Position Point     `json:"position"`
+	Expected PieceKind `json:"expected"`
+	Actual   PieceKind `json:"actual"`
 }
 
 func (e UnexpectedPieceError) Error() string {
@@ -45,12 +44,6 @@ func (e UnexpectedGameStateError) Error() string {
 		"expected game state %s, got %s",
 		e.Expected, e.Actual,
 	)
-}
-
-func parsePoint(str string) (image.Point, error) {
-	var p image.Point
-	_, err := fmt.Sscanf(str, "%d,%d", &p.X, &p.Y)
-	return p, err
 }
 
 // MoveType is a type that represents a move type.

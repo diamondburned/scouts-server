@@ -14,7 +14,7 @@ var playerBBaseY = BoardBounds.Min.Y
 
 // IsPlayerBase returns whether the given point is on the base of the given
 // player.
-func IsPlayerBase(player Player, pt image.Point) bool {
+func IsPlayerBase(player Player, pt Point) bool {
 	switch player {
 	case PlayerA:
 		return pt.Y == BoardBounds.Max.Y-1
@@ -30,15 +30,15 @@ func IsPlayerBase(player Player, pt image.Point) bool {
 // It exposes no methods for modifying the board, only for reading it.
 // To modify the board, use the Apply method on a Move.
 type Board struct {
-	positions map[image.Point]Piece
-	pieces    map[Piece][]image.Point
+	positions map[Point]Piece
+	pieces    map[Piece][]Point
 }
 
 // NewBoard returns a new board.
 func NewBoard() *Board {
 	return &Board{
-		positions: make(map[image.Point]Piece),
-		pieces:    make(map[Piece][]image.Point),
+		positions: make(map[Point]Piece),
+		pieces:    make(map[Piece][]Point),
 	}
 }
 
@@ -58,16 +58,16 @@ func (b *Board) Pieces() []Piece {
 
 // PieceAt returns the piece at the given point, or nil if there is no piece at
 // the given point.
-func (b *Board) PieceAt(p image.Point) Piece {
+func (b *Board) PieceAt(p Point) Piece {
 	return b.positions[p]
 }
 
 // HasPieceAt returns whether there is a piece at the given point.
-func (b *Board) HasPieceAt(p image.Point) bool {
+func (b *Board) HasPieceAt(p Point) bool {
 	return b.PieceAt(p) != nil
 }
 
-func (b *Board) PieceKindAt(p image.Point) PieceKind {
+func (b *Board) PieceKindAt(p Point) PieceKind {
 	piece := b.PieceAt(p)
 	if piece == nil {
 		return NoPieceKind
@@ -75,7 +75,7 @@ func (b *Board) PieceKindAt(p image.Point) PieceKind {
 	return piece.Kind()
 }
 
-func (b *Board) PointIsPlayer(p image.Point, player Player) bool {
+func (b *Board) PointIsPlayer(p Point, player Player) bool {
 	if !p.In(b.Bounds()) {
 		return false
 	}
@@ -83,7 +83,7 @@ func (b *Board) PointIsPlayer(p image.Point, player Player) bool {
 	return piece != nil && piece.Player() == player
 }
 
-func (b *Board) PointIsPiece(p image.Point, kind PieceKind) bool {
+func (b *Board) PointIsPiece(p Point, kind PieceKind) bool {
 	if !p.In(b.Bounds()) {
 		return false
 	}
@@ -173,6 +173,6 @@ func FormatBoard(board *Board) FormattedBoard {
 	return FormattedBoard(buf)
 }
 
-func pixOffset(pt image.Point, stride int) int {
+func pixOffset(pt Point, stride int) int {
 	return pt.Y*stride + pt.X
 }

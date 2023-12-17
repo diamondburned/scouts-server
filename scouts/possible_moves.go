@@ -1,7 +1,6 @@
 package scouts
 
 import (
-	"image"
 	"strings"
 )
 
@@ -44,7 +43,7 @@ func calculatePossibleMoves(g *Game, p Player) PossibleMoves {
 
 		allScoutMoves := make([]Move, 0, BoardBounds.Dx())
 		for x := BoardBounds.Min.X; x < BoardBounds.Max.X; x++ {
-			move := &PlaceScoutMove{ScoutPosition: image.Pt(x, y)}
+			move := &PlaceScoutMove{ScoutPosition: Pt(x, y)}
 			if move.validate(g) == nil {
 				allScoutMoves = append(allScoutMoves, move)
 			}
@@ -94,24 +93,24 @@ func calculatePossibleMoves(g *Game, p Player) PossibleMoves {
 	}
 }
 
-func generateAllDashMoves(scoutPosition image.Point) []*DashMove {
+func generateAllDashMoves(scoutPosition Point) []*DashMove {
 	return []*DashMove{
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(+1, 0))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(-1, 0))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(0, +1))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(0, -1))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(+1, +1))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(+1, -1))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(-1, +1))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(-1, -1))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(+1, 0))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(-1, 0))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(0, +1))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(0, -1))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(+1, +1))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(+1, -1))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(-1, +1))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(-1, -1))},
 	}
 }
 
-func generateAllJumpMoves(scoutPosition image.Point) []*JumpMove {
+func generateAllJumpMoves(scoutPosition Point) []*JumpMove {
 	return []*JumpMove{
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(+2, 0))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(-2, 0))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(0, +2))},
-		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(image.Pt(0, -2))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(+2, 0))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(-2, 0))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(0, +2))},
+		{ScoutPosition: scoutPosition, Destination: scoutPosition.Add(Pt(0, -2))},
 	}
 }
