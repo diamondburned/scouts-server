@@ -2,6 +2,7 @@ package scouts
 
 import (
 	"encoding"
+	"encoding/json"
 	"fmt"
 	"image"
 )
@@ -16,6 +17,8 @@ var (
 	_ fmt.Stringer             = Point{}
 	_ encoding.TextMarshaler   = Point{}
 	_ encoding.TextUnmarshaler = (*Point)(nil)
+	_ json.Marshaler           = Point{}
+	_ json.Unmarshaler         = (*Point)(nil)
 )
 
 // Pt returns a Point with the given coordinates.
@@ -37,6 +40,21 @@ func (p Point) MarshalText() ([]byte, error) {
 func (p *Point) UnmarshalText(text []byte) error {
 	_, err := fmt.Sscanf(string(text), "%d,%d", &p.X, &p.Y)
 	return err
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (p Point) MarshalJSON() ([]byte, error) {
+	return json.Marshal([2]int{p.X, p.Y})
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (p *Point) UnmarshalJSON(data []byte) error {
+	var xy [2]int
+	if err := json.Unmarshal(data, &xy); err != nil {
+		return err
+	}
+	p.X, p.Y = xy[0], xy[1]
+	return nil
 }
 
 // Add returns the vector p+q.
