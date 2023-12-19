@@ -85,11 +85,8 @@ func calculatePossibleMoves(g *Game, p Player) PossibleMoves {
 
 		return moves
 
-	case gameStateEnd:
-		return PossibleMoves{}
-
 	default:
-		panic("invalid game state")
+		return PossibleMoves{}
 	}
 }
 

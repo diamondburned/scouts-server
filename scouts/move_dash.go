@@ -108,9 +108,15 @@ func (m *DashMove) apply(game *Game) {
 	}
 
 	game.board.updatePiece(scoutPiece)
-	game.addMove(m, 1)
 
 	if scoutPiece.winsGame() {
-		game.currentState = gameStateEnd
+		switch game.currentTurn.Player {
+		case PlayerA:
+			game.currentState = gameStateEndP1Won
+		case PlayerB:
+			game.currentState = gameStateEndP2Won
+		}
 	}
+
+	game.addMove(m, 1)
 }

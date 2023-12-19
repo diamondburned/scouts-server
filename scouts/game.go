@@ -10,7 +10,8 @@ type gameState int
 const (
 	gameStatePlaceScouts gameState = iota
 	gameStatePlay
-	gameStateEnd
+	gameStateEndP1Won
+	gameStateEndP2Won
 )
 
 func (s gameState) String() string {
@@ -19,8 +20,10 @@ func (s gameState) String() string {
 		return "place scouts"
 	case gameStatePlay:
 		return "play"
-	case gameStateEnd:
-		return "end"
+	case gameStateEndP1Won:
+		return "end, player 1 won"
+	case gameStateEndP2Won:
+		return "end, player 2 won"
 	default:
 		return "unknown"
 	}
@@ -64,6 +67,11 @@ func NewGameFromPastTurns(turns []PastTurn) (*Game, error) {
 	return g, nil
 }
 
+// MakeMove is an alias for [Apply].
+func (g *Game) MakeMove(p Player, move Move) error {
+	return g.Apply(p, move)
+}
+
 // Apply applies the given move to the game.
 func (g *Game) Apply(p Player, move Move) error {
 	if g.currentTurn.Player != p {
@@ -97,6 +105,18 @@ func (g *Game) PlayerPastTurns(p Player) []PastTurn {
 		}
 	}
 	return turns
+}
+
+// Ended returns true and the winning player if the game has ended.
+func (g *Game) Ended() (Player, bool) {
+	switch g.currentState {
+	case gameStateEndP1Won:
+		return PlayerA, true
+	case gameStateEndP2Won:
+		return PlayerB, true
+	default:
+		return 0, false
+	}
 }
 
 // CurrentTurn returns the current turn.

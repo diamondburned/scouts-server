@@ -11,6 +11,11 @@ const (
 	PlayerB
 )
 
+const (
+	Player1 = PlayerA
+	Player2 = PlayerB
+)
+
 // ParsePlayer parses a player from a string.
 // To convert a player to a string, use the String method.
 func ParsePlayer(str string) (Player, error) {
