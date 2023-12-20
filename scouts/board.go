@@ -2,7 +2,6 @@ package scouts
 
 import (
 	"image"
-	"log"
 	"slices"
 )
 
@@ -95,16 +94,12 @@ func (b *Board) PointIsPiece(p Point, kind PieceKind) bool {
 }
 
 func (b *Board) updatePiece(p Piece) {
-	log.Printf("updating piece %v", p)
-
 	oldPosition, ok := b.pieces[p]
 	if !ok {
-		log.Printf("piece %#v not on board %#v", p, b.pieces)
 		panic("piece not on board")
 	}
 
 	for _, pt := range oldPosition {
-		log.Printf("  found old position %v", pt)
 		delete(b.positions, pt)
 	}
 
@@ -116,7 +111,6 @@ func (b *Board) addPiece(p Piece) {
 	b.pieces[p] = position
 
 	for _, pt := range position {
-		log.Printf("  found new position %v", pt)
 		if !pt.In(b.Bounds()) {
 			panic("piece out of bounds")
 		}
