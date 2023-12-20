@@ -13,12 +13,13 @@ import (
 // items from the in channel to the out channel in the correct order that must
 // be started by calling Start().
 type ConcurrentQueue[T any] struct {
-	started sync.Once
-	stopped sync.Once
-
 	chanIn   chan T
 	chanOut  chan T
 	overflow *list.List
+
+	started sync.Once
+	stopped sync.Once
+	closed  sync.Once
 
 	wg   sync.WaitGroup
 	quit chan struct{}
@@ -28,7 +29,7 @@ type ConcurrentQueue[T any] struct {
 func NewConcurrentQueue[T any]() *ConcurrentQueue[T] {
 	return &ConcurrentQueue[T]{
 		chanIn:   make(chan T),
-		chanOut:  make(chan T, 4),
+		chanOut:  make(chan T),
 		overflow: list.New(),
 		quit:     make(chan struct{}),
 	}
@@ -113,12 +114,14 @@ func (cq *ConcurrentQueue[T]) start() {
 	}()
 }
 
-// Stop ends the goroutine that moves items from the in channel to the out
-// channel. This does not clear the queue state, so the queue can be restarted
-// without dropping items.
+// Stop interrupts the background goroutine immediately and waits for it to
+// return.
 func (cq *ConcurrentQueue[T]) Stop() {
-	cq.stopped.Do(func() {
-		close(cq.quit)
-		cq.wg.Wait()
-	})
+	cq.stopped.Do(func() { close(cq.quit) })
+	cq.wg.Wait()
+}
+
+// Close closes the incoming channel.
+func (cq *ConcurrentQueue[T]) Close() {
+	cq.closed.Do(func() { close(cq.chanIn) })
 }
