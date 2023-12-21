@@ -55,9 +55,7 @@ const SessionTTL = 7 * 24 * time.Hour
 type SessionStorage interface {
 	// CreateSession creates a session with the given session ID and session
 	// metadata.
-	CreateSession(id UserID) (SessionToken, error)
-	// UpdateSession updates the session with the given session ID.
-	UpdateSession(SessionToken, UserID) error
+	CreateSession(UserID) (SessionToken, error)
 	// QuerySession queries the session with the given session ID.
 	QuerySession(SessionToken) (UserID, error)
 }
