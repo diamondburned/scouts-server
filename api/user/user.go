@@ -45,16 +45,16 @@ func (u *UserID) UnmarshalText(text []byte) error {
 // Authorized is a struct that contains the session token and the user ID
 // for an authorized user.
 type Authorized struct {
-	// User is the ID of the user.
+	// UserID is the ID of the user.
 	// If this is nil, then the user is anonymous.
-	User    *UserID `json:"user_id,omitempty"`
+	UserID  *UserID `json:"user_id,omitempty"`
 	session SessionToken
 }
 
 // NewAuthorized creates a new authorized user.
 func NewAuthorized(session SessionToken, user UserID) Authorized {
 	return Authorized{
-		User:    &user,
+		UserID:  &user,
 		session: session,
 	}
 }
@@ -84,8 +84,8 @@ func (u Authorized) Session() SessionToken {
 // The token is truncated to 8 characters.
 func (u Authorized) String() string {
 	str := u.session.String()
-	if u.User != nil {
-		str += fmt.Sprintf("[%s]", *u.User)
+	if u.UserID != nil {
+		str += fmt.Sprintf("[%s]", *u.UserID)
 	} else {
 		str += "[?]"
 	}

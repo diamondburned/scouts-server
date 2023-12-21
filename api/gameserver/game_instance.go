@@ -266,7 +266,7 @@ func (g *gameInstance) PlayerJoinNext(user user.Authorized) (<-chan GameEvent, f
 
 	g.sendEvent(PlayerJoinedEvent{
 		PlayerSide: player,
-		UserID:     user.User,
+		UserID:     user.UserID,
 	})
 
 	g.startIfReady()
@@ -286,7 +286,7 @@ func (g *gameInstance) PlayerJoinNext(user user.Authorized) (<-chan GameEvent, f
 
 		g.sendEvent(PlayerLeftEvent{
 			PlayerSide: player,
-			UserID:     user.User,
+			UserID:     user.UserID,
 		})
 
 		g.mu.Lock()
@@ -362,13 +362,13 @@ func playbackPlayerJoinEvents(state GameState) []GameEvent {
 	if state.PlayerA != nil {
 		events = append(events, PlayerJoinedEvent{
 			PlayerSide: scouts.PlayerA,
-			UserID:     state.PlayerA.User,
+			UserID:     state.PlayerA.UserID,
 		})
 	}
 	if state.PlayerB != nil {
 		events = append(events, PlayerJoinedEvent{
 			PlayerSide: scouts.PlayerB,
-			UserID:     state.PlayerB.User,
+			UserID:     state.PlayerB.UserID,
 		})
 	}
 	return events
