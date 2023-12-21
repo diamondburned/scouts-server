@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"time"
 
+	"github.com/puzpuzpuz/xsync/v3"
 	"libdb.so/hrt"
 )
 
@@ -57,7 +58,76 @@ type SessionStorage interface {
 	CreateSession() (SessionToken, error)
 	// ChangeSession changes the user that the session is associated with.
 	// This is useful when a user logs in or logs out.
-	ChangeSession(SessionToken, UserID) error
+	ChangeSession(SessionToken, *UserID) error
 	// QuerySession queries the session with the given session ID.
-	QuerySession(SessionToken) (UserID, error)
+	QuerySession(SessionToken) (*UserID, error)
+}
+
+// CachedSessionStorage is a session storage that caches session data.
+// Sessions wrapped by this storage are cached for about 5 minutes.
+type CachedSessionStorage struct {
+	storage SessionStorage
+	cache   xsync.MapOf[SessionToken, cachedSession]
+}
+
+// SessionCacheTTL is the time-to-live of a session cache entry.
+// This should be less than SessionTTL.
+const SessionCacheTTL = 5 * time.Minute
+
+type cachedSession struct {
+	userID *UserID
+	expiry time.Time
+}
+
+// NewCachedSessionStorage creates a new cached session storage.
+func NewCachedSessionStorage(storage SessionStorage) *CachedSessionStorage {
+	return &CachedSessionStorage{
+		storage: storage,
+		cache:   *xsync.NewMapOf[SessionToken, cachedSession](),
+	}
+}
+
+// CreateSession creates a new anonymous session.
+func (s *CachedSessionStorage) CreateSession() (SessionToken, error) {
+	token, err := s.storage.CreateSession()
+	if err != nil {
+		return token, err
+	}
+	s.cache.Store(token, cachedSession{
+		userID: nil,
+		expiry: time.Now().Add(SessionCacheTTL),
+	})
+	return token, nil
+}
+
+// ChangeSession changes the user that the session is associated with.
+func (s *CachedSessionStorage) ChangeSession(token SessionToken, userID *UserID) error {
+	err := s.storage.ChangeSession(token, userID)
+	if err != nil {
+		return err
+	}
+	s.cache.Store(token, cachedSession{
+		userID: userID,
+		expiry: time.Now().Add(SessionCacheTTL),
+	})
+	return nil
+}
+
+// QuerySession queries the session with the given session ID.
+func (s *CachedSessionStorage) QuerySession(token SessionToken) (*UserID, error) {
+	if session, ok := s.cache.Load(token); ok {
+		if session.expiry.After(time.Now()) {
+			return session.userID, nil
+		}
+		s.cache.Delete(token)
+	}
+	userID, err := s.storage.QuerySession(token)
+	if err != nil {
+		return userID, err
+	}
+	s.cache.Store(token, cachedSession{
+		userID: userID,
+		expiry: time.Now().Add(SessionCacheTTL),
+	})
+	return userID, nil
 }

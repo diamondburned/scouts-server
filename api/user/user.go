@@ -92,6 +92,18 @@ func (u Authorization) String() string {
 	return str
 }
 
+// AuthorizationEq returns true if the two authorized users are equal.
+// Unlike Authorization.Eq, this function allows nil values.
+func AuthorizationEq(a, b *Authorization) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return a.Eq(*b)
+}
+
 // Eq returns true if the authorized user is equal to the other authorized
 // user. It only compares the token.
 func (u Authorization) Eq(other Authorization) bool {

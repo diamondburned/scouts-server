@@ -28,6 +28,9 @@ type gameInstance struct {
 	timer  gameTimer
 	stopCh chan struct{}
 	waitg  sync.WaitGroup
+
+	playerAConnected bool
+	playerBConnected bool
 }
 
 func newGameInstance(opts CreateGameOptions, logger *slog.Logger, clock customClock) *gameInstance {
@@ -196,7 +199,7 @@ func (g *gameInstance) startIfReady() {
 	}(g.stopCh)
 }
 
-func (g *gameInstance) MakeMove(user user.Authorization, move scouts.Move) error {
+func (g *gameInstance) MakeMove(authorization user.Authorization, move scouts.Move) error {
 	now := g.clock.Now()
 
 	g.mu.Lock()
@@ -204,9 +207,9 @@ func (g *gameInstance) MakeMove(user user.Authorization, move scouts.Move) error
 
 	var player scouts.Player
 	switch {
-	case g.state.PlayerA != nil && g.state.PlayerA.Eq(user):
+	case user.AuthorizationEq(g.state.PlayerA, &authorization):
 		player = scouts.PlayerA
-	case g.state.PlayerB != nil && g.state.PlayerB.Eq(user):
+	case user.AuthorizationEq(g.state.PlayerB, &authorization):
 		player = scouts.PlayerB
 	default:
 		return fmt.Errorf("%w: invalid session token", ErrInvalidMove)
@@ -236,7 +239,6 @@ func (g *gameInstance) MakeMove(user user.Authorization, move scouts.Move) error
 	return nil
 }
 
-// StateSnapshot returns a snapshot of the current state of the game.
 func (g *gameInstance) StateSnapshot() GameState {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -247,62 +249,77 @@ func (g *gameInstance) StateSnapshot() GameState {
 	return s
 }
 
-func (g *gameInstance) PlayerJoinNext(user user.Authorization) (<-chan GameEvent, func(), error) {
+func (g *gameInstance) PlayerJoin(authorization user.Authorization) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
 	var player scouts.Player
 
 	switch {
-	case g.state.PlayerA == nil || g.state.PlayerA.Eq(user):
-		g.state.PlayerA = &user
+	case g.state.PlayerA == nil || user.AuthorizationEq(g.state.PlayerA, &authorization):
+		g.state.PlayerA = &authorization
 		player = scouts.PlayerA
-	case g.state.PlayerB == nil || g.state.PlayerB.Eq(user):
-		g.state.PlayerB = &user
+	case g.state.PlayerB == nil || user.AuthorizationEq(g.state.PlayerB, &authorization):
+		g.state.PlayerB = &authorization
 		player = scouts.PlayerB
 	default:
-		return nil, nil, ErrGameFull
+		return ErrGameFull
 	}
 
 	g.sendEvent(PlayerJoinedEvent{
 		PlayerSide: player,
-		UserID:     user.UserID,
+		UserID:     authorization.UserID,
 	})
 
 	g.startIfReady()
+	return nil
+}
+
+func (g *gameInstance) SubscribeGame(authorization user.Authorization) (<-chan GameEvent, func(), error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	var player scouts.Player
+	switch {
+	case user.AuthorizationEq(g.state.PlayerA, &authorization):
+		player = scouts.PlayerA
+		g.playerAConnected = true
+	case user.AuthorizationEq(g.state.PlayerB, &authorization):
+		player = scouts.PlayerB
+		g.playerBConnected = true
+	}
+
+	if player != scouts.PlayerNone {
+		g.sendEvent(PlayerConnectedEvent{PlayerSide: player})
+	}
 
 	queue := pubsub.NewConcurrentQueue[GameEvent]()
 	queue.Start()
 
 	in := queue.In()
 
-	pubsub.Send(in, playbackPlayerJoinEvents(g.state)...)
+	pubsub.Send(in, playbackPlayerJoinEvents(g)...)
 	pubsub.Send(in, playbackGameEvents(g.state)...)
 	g.events.Subscribe(queue)
 
 	return queue.Out(), func() {
-		defer queue.Stop()
-		defer g.events.Unsubscribe(queue)
+		// TODO(diamondburned): add explicit player leave
+		// TODO(diamondburned): report when player disconnects
 
-		g.sendEvent(PlayerLeftEvent{
-			PlayerSide: player,
-			UserID:     user.UserID,
-		})
-
-		g.mu.Lock()
-		switch player {
-		case scouts.PlayerA:
-			g.state.PlayerA = nil
-		case scouts.PlayerB:
-			g.state.PlayerB = nil
+		if player != 0 {
+			g.mu.Lock()
+			switch player {
+			case scouts.PlayerA:
+				g.playerAConnected = false
+			case scouts.PlayerB:
+				g.playerBConnected = false
+			}
+			g.sendEvent(PlayerDisconnectedEvent{PlayerSide: player})
+			g.mu.Unlock()
 		}
-		g.mu.Unlock()
 
-		g.logger.Debug(
-			"player left and mutex unlocked, stopping game",
-			"player", player)
-
-		g.Stop()
+		g.events.Unsubscribe(queue)
+		queue.Stop()
 	}, nil
 }
 
@@ -357,19 +374,29 @@ func makeMoveForEvents(game *scouts.Game, player scouts.Player, move scouts.Move
 	return events, nil
 }
 
-func playbackPlayerJoinEvents(state GameState) []GameEvent {
+func playbackPlayerJoinEvents(game *gameInstance) []GameEvent {
 	var events []GameEvent
-	if state.PlayerA != nil {
+	if game.state.PlayerA != nil {
 		events = append(events, PlayerJoinedEvent{
 			PlayerSide: scouts.PlayerA,
-			UserID:     state.PlayerA.UserID,
+			UserID:     game.state.PlayerA.UserID,
 		})
+		if game.playerAConnected {
+			events = append(events, PlayerConnectedEvent{
+				PlayerSide: scouts.PlayerA,
+			})
+		}
 	}
-	if state.PlayerB != nil {
+	if game.state.PlayerB != nil {
 		events = append(events, PlayerJoinedEvent{
 			PlayerSide: scouts.PlayerB,
-			UserID:     state.PlayerB.UserID,
+			UserID:     game.state.PlayerB.UserID,
 		})
+		if game.playerBConnected {
+			events = append(events, PlayerConnectedEvent{
+				PlayerSide: scouts.PlayerB,
+			})
+		}
 	}
 	return events
 }

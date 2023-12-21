@@ -1,6 +1,8 @@
 package gameserver
 
 import (
+	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -38,12 +40,27 @@ func TestGameInstance(t *testing.T) {
 	}, {
 		name: "interrupted after both players join",
 		replay: func(t *testing.T, game *testingGameInstance) {
-			ev1, _ := game.join(t, game.User1)
-			ev2, _ := game.join(t, game.User2)
+			game.join(t, game.User1)
+			game.join(t, game.User2)
+
+			ev1, _ := game.subscribe(t, game.User1)
+			ev2, _ := game.subscribe(t, game.User2)
 
 			events := []GameEvent{
-				PlayerJoinedEvent{scouts.Player1, ptr[user.UserID](1)},
-				PlayerJoinedEvent{scouts.Player2, ptr[user.UserID](2)},
+				PlayerJoinedEvent{
+					PlayerSide: scouts.Player1,
+					UserID:     ptr[user.UserID](1),
+				},
+				PlayerConnectedEvent{
+					PlayerSide: scouts.Player1,
+				},
+				PlayerJoinedEvent{
+					PlayerSide: scouts.Player2,
+					UserID:     ptr[user.UserID](2),
+				},
+				PlayerConnectedEvent{
+					PlayerSide: scouts.Player2,
+				},
 				TurnBeginEvent{
 					PlayerSide:     scouts.Player1,
 					PlaysRemaining: 1,
@@ -57,19 +74,34 @@ func TestGameInstance(t *testing.T) {
 	}, {
 		name: "normal game up to placing scouts",
 		replay: func(t *testing.T, game *testingGameInstance) {
-			ev1, _ := game.join(t, game.User1)
-			ev2, _ := game.join(t, game.User2)
+			game.join(t, game.User1)
+			game.join(t, game.User2)
+
+			ev1, _ := game.subscribe(t, game.User1)
+			ev2, _ := game.subscribe(t, game.User2)
 
 			game.move(t, game.User1, mustMove("place_scout 0,9"))
 			game.move(t, game.User2, mustMove("place_scout 0,0"))
 
 			events := []GameEvent{
-				PlayerJoinedEvent{scouts.Player1, ptr[user.UserID](1)},
-				PlayerJoinedEvent{scouts.Player2, ptr[user.UserID](2)},
+				PlayerJoinedEvent{
+					PlayerSide: scouts.Player1,
+					UserID:     ptr[user.UserID](1),
+				},
+				PlayerJoinedEvent{
+					PlayerSide: scouts.Player2,
+					UserID:     ptr[user.UserID](2),
+				},
 				TurnBeginEvent{
 					PlayerSide:     scouts.Player1,
 					PlaysRemaining: 1,
 					TimeRemaining:  InfiniteDurationPair,
+				},
+				PlayerConnectedEvent{
+					PlayerSide: scouts.Player1,
+				},
+				PlayerConnectedEvent{
+					PlayerSide: scouts.Player2,
 				},
 				MoveMadeEvent{
 					Move:           mustMove("place_scout 0,9"),
@@ -96,8 +128,11 @@ func TestGameInstance(t *testing.T) {
 	}, {
 		name: "normal game but illegal move",
 		replay: func(t *testing.T, game *testingGameInstance) {
-			ev1, _ := game.join(t, game.User1)
-			ev2, _ := game.join(t, game.User2)
+			game.join(t, game.User1)
+			game.join(t, game.User2)
+
+			ev1, _ := game.subscribe(t, game.User1)
+			ev2, _ := game.subscribe(t, game.User2)
 
 			err := game.MakeMove(game.User1, mustMove("jump 0,0 0,9"))
 			assert.Error(t, err, "player was able to make illegal move")
@@ -107,8 +142,20 @@ func TestGameInstance(t *testing.T) {
 			game.move(t, game.User2, mustMove("place_scout 0,0"))
 
 			events := []GameEvent{
-				PlayerJoinedEvent{scouts.Player1, ptr[user.UserID](1)},
-				PlayerJoinedEvent{scouts.Player2, ptr[user.UserID](2)},
+				PlayerJoinedEvent{
+					PlayerSide: scouts.Player1,
+					UserID:     ptr[user.UserID](1),
+				},
+				PlayerConnectedEvent{
+					PlayerSide: scouts.Player1,
+				},
+				PlayerJoinedEvent{
+					PlayerSide: scouts.Player2,
+					UserID:     ptr[user.UserID](2),
+				},
+				PlayerConnectedEvent{
+					PlayerSide: scouts.Player2,
+				},
 				TurnBeginEvent{
 					PlayerSide:     scouts.Player1,
 					PlaysRemaining: 1,
@@ -129,6 +176,11 @@ func TestGameInstance(t *testing.T) {
 					Move:           mustMove("place_scout 0,0"),
 					PlayerSide:     scouts.Player2,
 					PlaysRemaining: 0,
+					TimeRemaining:  InfiniteDurationPair,
+				},
+				TurnBeginEvent{
+					PlayerSide:     scouts.Player1,
+					PlaysRemaining: 1,
 					TimeRemaining:  InfiniteDurationPair,
 				},
 			}
@@ -139,15 +191,33 @@ func TestGameInstance(t *testing.T) {
 	}, {
 		name: "normal game but player leaves",
 		replay: func(t *testing.T, game *testingGameInstance) {
-			_, stop1 := game.join(t, game.User1)
-			ev2, _ := game.join(t, game.User2)
+			game.join(t, game.User1)
+			game.join(t, game.User2)
+
+			_, stop1 := game.subscribe(t, game.User1)
+			ev2, _ := game.subscribe(t, game.User2)
 
 			game.move(t, game.User1, mustMove("place_scout 0,9"))
 			game.move(t, game.User2, mustMove("place_scout 0,0"))
 
+			stop1()                                     // user 1 leaves
+			ev1, stop1 := game.subscribe(t, game.User1) // rejoins
+
 			events := []GameEvent{
-				PlayerJoinedEvent{scouts.Player1, ptr[user.UserID](1)},
-				PlayerJoinedEvent{scouts.Player2, ptr[user.UserID](2)},
+				PlayerJoinedEvent{
+					PlayerSide: scouts.Player1,
+					UserID:     ptr[user.UserID](1),
+				},
+				PlayerConnectedEvent{
+					PlayerSide: scouts.Player1,
+				},
+				PlayerJoinedEvent{
+					PlayerSide: scouts.Player2,
+					UserID:     ptr[user.UserID](2),
+				},
+				PlayerConnectedEvent{
+					PlayerSide: scouts.Player2,
+				},
 				TurnBeginEvent{
 					PlayerSide:     scouts.Player1,
 					PlaysRemaining: 1,
@@ -175,11 +245,17 @@ func TestGameInstance(t *testing.T) {
 					PlaysRemaining: 1,
 					TimeRemaining:  InfiniteDurationPair,
 				},
-				PlayerLeftEvent{PlayerSide: scouts.Player1, UserID: ptr[user.UserID](1)},
-				GoingAwayEvent{},
+				PlayerDisconnectedEvent{
+					PlayerSide: scouts.Player1,
+				},
+				PlayerConnectedEvent{
+					PlayerSide: scouts.Player1,
+				},
 			}
 
-			stop1()
+			// For player 1, expect up to the disconnect-reconnect events.
+			expectEvents(t, ev1, events[:len(events)-2])
+			// For player 2, they should still receive everything.
 			expectEvents(t, ev2, events)
 		},
 	}}
@@ -202,8 +278,8 @@ func newTestingGameInstance(t *testing.T, opts CreateGameOptions) *testingGameIn
 	token1 := user.GenerateSessionToken()
 	token2 := user.GenerateSessionToken()
 
-	user1 := user.NewAnonymous(token1)
-	user2 := user.NewAnonymous(token2)
+	user1 := user.NewAuthorized(token1, 1)
+	user2 := user.NewAuthorized(token2, 2)
 
 	logger := slogt.New(t)
 	game := newGameInstance(opts, logger, nil)
@@ -215,9 +291,14 @@ func newTestingGameInstance(t *testing.T, opts CreateGameOptions) *testingGameIn
 	}
 }
 
-func (g *testingGameInstance) join(t *testing.T, player user.Authorization) (<-chan GameEvent, func()) {
-	ev, stop, err := g.PlayerJoinNext(player)
+func (g *testingGameInstance) join(t *testing.T, player user.Authorization) {
+	err := g.PlayerJoin(player)
 	assert.NoError(t, err, "player should be able to join")
+}
+
+func (g *testingGameInstance) subscribe(t *testing.T, player user.Authorization) (<-chan GameEvent, func()) {
+	ev, stop, err := g.SubscribeGame(player)
+	assert.NoError(t, err, "player should be able to subscribe to game events")
 	t.Cleanup(func() { stop() })
 	return ev, stop
 }
@@ -236,16 +317,28 @@ func mustMove(move string) scouts.Move {
 }
 
 func expectEvents(t *testing.T, ch <-chan GameEvent, events []GameEvent) {
-	for _, ev := range events {
+	checkQueue := slices.Clone(events)
+	t.Logf("expecting %d events", len(checkQueue))
+	for len(checkQueue) > 0 {
 		select {
 		case actual, ok := <-ch:
 			if !ok {
 				t.Fatal("channel closed prematurely")
 			}
-			assert.Equal(t, ev, actual, "expected event")
-			t.Logf("received event %T", actual)
+			ix := slices.IndexFunc(checkQueue, func(wanted GameEvent) bool {
+				return reflect.DeepEqual(wanted, actual)
+			})
+			if ix == -1 {
+				t.Fatalf("unexpected event %T", actual)
+			}
+			checkQueue = slices.Delete(checkQueue, ix, ix+1)
+			t.Logf("  received event %T", actual)
 		case <-time.After(2 * time.Second):
-			t.Fatal("timed out waiting for event")
+			for _, ev := range checkQueue {
+				t.Logf("  missed %T", ev)
+			}
+			t.Error("timed out waiting for event")
+			return
 		}
 	}
 }

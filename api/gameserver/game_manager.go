@@ -118,15 +118,6 @@ func (m *GameManager) gc() {
 	})
 }
 
-// QueryGame queries the game with the given game ID.
-func (m *GameManager) QueryGame(id GameID) (GameState, error) {
-	game, ok := m.games.Load(id)
-	if !ok {
-		return GameState{}, ErrNotFound
-	}
-	return game.state, nil
-}
-
 // CreateGame creates a game with the given game ID and game metadata.
 func (m *GameManager) CreateGame(user user.Authorization, metadata CreateGameOptions) (GameID, error) {
 	game := newGameInstance(metadata, m.logger, nil)
@@ -141,21 +132,24 @@ func (m *GameManager) CreateGame(user user.Authorization, metadata CreateGameOpt
 	return game.state.GameID, nil
 }
 
+// QueryGame queries the game with the given game ID.
+func (m *GameManager) QueryGame(id GameID) (GameState, error) {
+	game, ok := m.games.Load(id)
+	if !ok {
+		return GameState{}, ErrNotFound
+	}
+	return game.StateSnapshot(), nil
+}
+
 // JoinGame joins the game with the given game ID.
 // If the game is full, then this returns an error, otherwise the player
 // automatically takes the next available side.
-func (m *GameManager) JoinGame(user user.Authorization, id GameID) (<-chan GameEvent, func(), error) {
+func (m *GameManager) JoinGame(user user.Authorization, id GameID) error {
 	game, ok := m.games.Load(id)
 	if !ok {
-		return nil, nil, ErrNotFound
+		return ErrNotFound
 	}
-
-	ch, stop, err := game.PlayerJoinNext(user)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return ch, stop, nil
+	return game.PlayerJoin(user)
 }
 
 // MakeMove makes a move in the game with the given game ID.
@@ -165,4 +159,15 @@ func (m *GameManager) MakeMove(user user.Authorization, id GameID, move scouts.M
 		return ErrNotFound
 	}
 	return game.MakeMove(user, move)
+}
+
+// SubscribeGame returns a new channel that will receive game events.
+// The channel will first receive playbacks of all moves that have been made in
+// the game, and then it will receive new moves as they are made.
+func (m *GameManager) SubscribeGame(user user.Authorization, id GameID) (<-chan GameEvent, func(), error) {
+	game, ok := m.games.Load(id)
+	if !ok {
+		return nil, nil, ErrNotFound
+	}
+	return game.SubscribeGame(user)
 }

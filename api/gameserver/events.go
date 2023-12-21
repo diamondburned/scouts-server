@@ -30,6 +30,24 @@ type PlayerLeftEvent struct {
 	UserID *user.UserID `json:"user_id"`
 }
 
+// PlayerConnectedEvent is an event that is emitted when a player
+// connects to the game. It can only be emitted after a PlayerJoinedEvent
+// but before a PlayerLeftEvent.
+type PlayerConnectedEvent struct {
+	// PlayerSide is the side that the user connected.
+	PlayerSide scouts.Player `json:"player_side"`
+}
+
+// PlayerDisconnectedEvent is an event that is emitted when a player
+// disconnects from the game. It can only be emitted after a PlayerJoinedEvent
+// but before a PlayerLeftEvent. A disconnect implies that the player might
+// still choose to rejoin the game, after which a PlayerConnectedEvent will be
+// emitted again.
+type PlayerDisconnectedEvent struct {
+	// PlayerSide is the side that the user disconnected.
+	PlayerSide scouts.Player `json:"player_side"`
+}
+
 // TurnBeginEvent is an event that is emitted when a turn begins.
 type TurnBeginEvent struct {
 	// PlayerSide is the side that is about to make a move.
@@ -78,9 +96,11 @@ type GoingAwayEvent struct {
 // 	GoingAwayGameExpired = GoingAwayEvent{Reason: "game has expired"}
 // )
 
-func (PlayerJoinedEvent) Type() string { return "player_joined" }
-func (PlayerLeftEvent) Type() string   { return "player_left" }
-func (TurnBeginEvent) Type() string    { return "turn_begin" }
-func (MoveMadeEvent) Type() string     { return "move_made" }
-func (GameEndEvent) Type() string      { return "game_end" }
-func (GoingAwayEvent) Type() string    { return "going_away" }
+func (PlayerJoinedEvent) Type() string       { return "player_joined" }
+func (PlayerLeftEvent) Type() string         { return "player_left" }
+func (PlayerConnectedEvent) Type() string    { return "player_connected" }
+func (PlayerDisconnectedEvent) Type() string { return "player_disconnected" }
+func (TurnBeginEvent) Type() string          { return "turn_begin" }
+func (MoveMadeEvent) Type() string           { return "move_made" }
+func (GameEndEvent) Type() string            { return "game_end" }
+func (GoingAwayEvent) Type() string          { return "going_away" }
