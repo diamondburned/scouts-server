@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"libdb.so/hrt"
+	"libdb.so/scouts-server/api/user"
 	"libdb.so/scouts-server/internal/pubsub"
 	"libdb.so/scouts-server/scouts"
 )
@@ -48,8 +49,8 @@ func (g *gameInstance) sendEvent(evs ...GameEvent) {
 			"sending game event",
 			"event_type", ev.Type(),
 			"event", ev,
-			"player_a", formatUser(g.state.PlayerA),
-			"player_b", formatUser(g.state.PlayerB),
+			"player_a", user.OptionalAuthorizedUserString(g.state.PlayerA),
+			"player_b", user.OptionalAuthorizedUserString(g.state.PlayerB),
 			"moves", len(g.state.Moves))
 	}
 	g.events.Publish(evs...)
@@ -105,15 +106,15 @@ func (g *gameInstance) startIfReady() {
 	if !g.state.hasBothPlayers() || g.stopCh != nil {
 		g.logger.Debug(
 			"game is not ready to start",
-			"player_a", formatUser(g.state.PlayerA),
-			"player_b", formatUser(g.state.PlayerB))
+			"player_a", user.OptionalAuthorizedUserString(g.state.PlayerA),
+			"player_b", user.OptionalAuthorizedUserString(g.state.PlayerB))
 		return
 	}
 
 	g.logger.Debug(
 		"game is ready to start or resume",
-		"player_a", formatUser(g.state.PlayerA),
-		"player_b", formatUser(g.state.PlayerB),
+		"player_a", user.OptionalAuthorizedUserString(g.state.PlayerA),
+		"player_b", user.OptionalAuthorizedUserString(g.state.PlayerB),
 		"started", g.state.BeganAt != nil)
 
 	if g.state.BeganAt == nil {
@@ -195,7 +196,7 @@ func (g *gameInstance) startIfReady() {
 	}(g.stopCh)
 }
 
-func (g *gameInstance) MakeMove(token SessionToken, move scouts.Move) error {
+func (g *gameInstance) MakeMove(user user.Authorized, move scouts.Move) error {
 	now := g.clock.Now()
 
 	g.mu.Lock()
@@ -203,9 +204,9 @@ func (g *gameInstance) MakeMove(token SessionToken, move scouts.Move) error {
 
 	var player scouts.Player
 	switch {
-	case g.state.PlayerA != nil && g.state.PlayerA.session == token:
+	case g.state.PlayerA != nil && g.state.PlayerA.Eq(user):
 		player = scouts.PlayerA
-	case g.state.PlayerB != nil && g.state.PlayerB.session == token:
+	case g.state.PlayerB != nil && g.state.PlayerB.Eq(user):
 		player = scouts.PlayerB
 	default:
 		return fmt.Errorf("%w: invalid session token", ErrInvalidMove)
@@ -246,18 +247,18 @@ func (g *gameInstance) StateSnapshot() GameState {
 	return s
 }
 
-func (g *gameInstance) PlayerJoinNext(token AuthorizedUser) (<-chan GameEvent, func(), error) {
+func (g *gameInstance) PlayerJoinNext(user user.Authorized) (<-chan GameEvent, func(), error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
 	var player scouts.Player
 
 	switch {
-	case g.state.PlayerA == nil || *g.state.PlayerA == token:
-		g.state.PlayerA = &token
+	case g.state.PlayerA == nil || g.state.PlayerA.Eq(user):
+		g.state.PlayerA = &user
 		player = scouts.PlayerA
-	case g.state.PlayerB == nil || *g.state.PlayerB == token:
-		g.state.PlayerB = &token
+	case g.state.PlayerB == nil || g.state.PlayerB.Eq(user):
+		g.state.PlayerB = &user
 		player = scouts.PlayerB
 	default:
 		return nil, nil, ErrGameFull
@@ -265,7 +266,7 @@ func (g *gameInstance) PlayerJoinNext(token AuthorizedUser) (<-chan GameEvent, f
 
 	g.sendEvent(PlayerJoinedEvent{
 		PlayerSide: player,
-		UserID:     token.User,
+		UserID:     user.User,
 	})
 
 	g.startIfReady()
@@ -285,7 +286,7 @@ func (g *gameInstance) PlayerJoinNext(token AuthorizedUser) (<-chan GameEvent, f
 
 		g.sendEvent(PlayerLeftEvent{
 			PlayerSide: player,
-			UserID:     token.User,
+			UserID:     user.User,
 		})
 
 		g.mu.Lock()

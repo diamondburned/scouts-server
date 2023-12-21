@@ -2,12 +2,12 @@ package gameserver
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/puzpuzpuz/xsync/v3"
 	"libdb.so/hrt"
+	"libdb.so/scouts-server/api/user"
 	"libdb.so/scouts-server/scouts"
 )
 
@@ -39,10 +39,10 @@ type GameState struct {
 	BeganAt *time.Time
 	// PlayerA is the first player.
 	// If nil, then the player has not joined yet.
-	PlayerA *AuthorizedUser
+	PlayerA *user.Authorized
 	// PlayerB is the second player.
 	// If nil, then the player has not joined yet.
-	PlayerB *AuthorizedUser
+	PlayerB *user.Authorized
 	// Moves is the list of moves that have been made in the game.
 	Moves []MoveSnapshot
 	// Metadata is the metadata of the game.
@@ -63,34 +63,6 @@ type MoveSnapshot struct {
 	Player scouts.Player
 	Move   scouts.Move
 	Time   time.Time
-}
-
-// AuthorizedUser is a struct that contains the session token and the user ID
-// for an authorized user.
-type AuthorizedUser struct {
-	// User is the ID of the user.
-	// If this is nil, then the user is anonymous.
-	User *UserID `json:"user_id,omitempty"`
-
-	session SessionToken
-}
-
-func formatUser(user *AuthorizedUser) string {
-	if user == nil {
-		return "<nil>"
-	}
-	str := user.session.String()[:8]
-	if user.User != nil {
-		str += fmt.Sprintf("[%s]", *user.User)
-	} else {
-		str += "[?]"
-	}
-	return str
-}
-
-// Session returns the session token.
-func (u AuthorizedUser) Session() SessionToken {
-	return u.session
 }
 
 const (
@@ -156,7 +128,7 @@ func (m *GameManager) QueryGame(id GameID) (GameState, error) {
 }
 
 // CreateGame creates a game with the given game ID and game metadata.
-func (m *GameManager) CreateGame(token AuthorizedUser, metadata CreateGameOptions) (GameID, error) {
+func (m *GameManager) CreateGame(user user.Authorized, metadata CreateGameOptions) (GameID, error) {
 	game := newGameInstance(metadata, m.logger, nil)
 	for {
 		game.state.ID = GenerateGameID()
@@ -172,13 +144,13 @@ func (m *GameManager) CreateGame(token AuthorizedUser, metadata CreateGameOption
 // JoinGame joins the game with the given game ID.
 // If the game is full, then this returns an error, otherwise the player
 // automatically takes the next available side.
-func (m *GameManager) JoinGame(token AuthorizedUser, id GameID) (<-chan GameEvent, func(), error) {
+func (m *GameManager) JoinGame(user user.Authorized, id GameID) (<-chan GameEvent, func(), error) {
 	game, ok := m.games.Load(id)
 	if !ok {
 		return nil, nil, ErrNotFound
 	}
 
-	ch, stop, err := game.PlayerJoinNext(token)
+	ch, stop, err := game.PlayerJoinNext(user)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -187,10 +159,10 @@ func (m *GameManager) JoinGame(token AuthorizedUser, id GameID) (<-chan GameEven
 }
 
 // MakeMove makes a move in the game with the given game ID.
-func (m *GameManager) MakeMove(token AuthorizedUser, id GameID, move scouts.Move) error {
+func (m *GameManager) MakeMove(user user.Authorized, id GameID, move scouts.Move) error {
 	game, ok := m.games.Load(id)
 	if !ok {
 		return ErrNotFound
 	}
-	return game.MakeMove(token.session, move)
+	return game.MakeMove(user, move)
 }

@@ -1,6 +1,9 @@
 package gameserver
 
-import "libdb.so/scouts-server/scouts"
+import (
+	"libdb.so/scouts-server/api/user"
+	"libdb.so/scouts-server/scouts"
+)
 
 // GameEvent is an interface that represents a game event.
 // An event is emitted when the game state changes.
@@ -15,7 +18,7 @@ type PlayerJoinedEvent struct {
 	PlayerSide scouts.Player `json:"player_side"`
 	// UserID is the ID of the user that joined the game.
 	// If this is nil, then the user is anonymous.
-	UserID *UserID `json:"user_id"`
+	UserID *user.UserID `json:"user_id"`
 }
 
 // PlayerLeftEvent is an event that is emitted when a player leaves the game.
@@ -24,7 +27,7 @@ type PlayerLeftEvent struct {
 	PlayerSide scouts.Player `json:"player_side"`
 	// UserID is the ID of the user that left the game.
 	// If this is nil, then the user is anonymous.
-	UserID *UserID `json:"user_id"`
+	UserID *user.UserID `json:"user_id"`
 }
 
 // TurnBeginEvent is an event that is emitted when a turn begins.

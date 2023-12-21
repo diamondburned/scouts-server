@@ -6,6 +6,7 @@ import (
 
 	"github.com/alecthomas/assert/v2"
 	"github.com/neilotoole/slogt"
+	"libdb.so/scouts-server/api/user"
 	"libdb.so/scouts-server/scouts"
 )
 
@@ -29,9 +30,9 @@ func TestGameInstance(t *testing.T) {
 			assert.Equal(t, len(state.Moves), 0, "snapshot should have no moves")
 
 			var err error
-			err = game.MakeMove(game.User1.session, mustMove("place_scout 0,0"))
+			err = game.MakeMove(game.User1, mustMove("place_scout 0,0"))
 			assert.Error(t, err, "player was able to make move before game was ready")
-			err = game.MakeMove(game.User2.session, mustMove("place_scout 0,0"))
+			err = game.MakeMove(game.User2, mustMove("place_scout 0,0"))
 			assert.Error(t, err, "player was able to make move before game was ready")
 		},
 	}, {
@@ -41,8 +42,8 @@ func TestGameInstance(t *testing.T) {
 			ev2, _ := game.join(t, game.User2)
 
 			events := []GameEvent{
-				PlayerJoinedEvent{scouts.Player1, ptr[UserID](1)},
-				PlayerJoinedEvent{scouts.Player2, ptr[UserID](2)},
+				PlayerJoinedEvent{scouts.Player1, ptr[user.UserID](1)},
+				PlayerJoinedEvent{scouts.Player2, ptr[user.UserID](2)},
 				TurnBeginEvent{
 					PlayerSide:     scouts.Player1,
 					PlaysRemaining: 1,
@@ -63,8 +64,8 @@ func TestGameInstance(t *testing.T) {
 			game.move(t, game.User2, mustMove("place_scout 0,0"))
 
 			events := []GameEvent{
-				PlayerJoinedEvent{scouts.Player1, ptr[UserID](1)},
-				PlayerJoinedEvent{scouts.Player2, ptr[UserID](2)},
+				PlayerJoinedEvent{scouts.Player1, ptr[user.UserID](1)},
+				PlayerJoinedEvent{scouts.Player2, ptr[user.UserID](2)},
 				TurnBeginEvent{
 					PlayerSide:     scouts.Player1,
 					PlaysRemaining: 1,
@@ -98,7 +99,7 @@ func TestGameInstance(t *testing.T) {
 			ev1, _ := game.join(t, game.User1)
 			ev2, _ := game.join(t, game.User2)
 
-			err := game.MakeMove(game.User1.session, mustMove("jump 0,0 0,9"))
+			err := game.MakeMove(game.User1, mustMove("jump 0,0 0,9"))
 			assert.Error(t, err, "player was able to make illegal move")
 
 			// you should still be able to make a legal move afterwards
@@ -106,8 +107,8 @@ func TestGameInstance(t *testing.T) {
 			game.move(t, game.User2, mustMove("place_scout 0,0"))
 
 			events := []GameEvent{
-				PlayerJoinedEvent{scouts.Player1, ptr[UserID](1)},
-				PlayerJoinedEvent{scouts.Player2, ptr[UserID](2)},
+				PlayerJoinedEvent{scouts.Player1, ptr[user.UserID](1)},
+				PlayerJoinedEvent{scouts.Player2, ptr[user.UserID](2)},
 				TurnBeginEvent{
 					PlayerSide:     scouts.Player1,
 					PlaysRemaining: 1,
@@ -145,8 +146,8 @@ func TestGameInstance(t *testing.T) {
 			game.move(t, game.User2, mustMove("place_scout 0,0"))
 
 			events := []GameEvent{
-				PlayerJoinedEvent{scouts.Player1, ptr[UserID](1)},
-				PlayerJoinedEvent{scouts.Player2, ptr[UserID](2)},
+				PlayerJoinedEvent{scouts.Player1, ptr[user.UserID](1)},
+				PlayerJoinedEvent{scouts.Player2, ptr[user.UserID](2)},
 				TurnBeginEvent{
 					PlayerSide:     scouts.Player1,
 					PlaysRemaining: 1,
@@ -174,7 +175,7 @@ func TestGameInstance(t *testing.T) {
 					PlaysRemaining: 1,
 					TimeRemaining:  InfiniteDurationPair,
 				},
-				PlayerLeftEvent{PlayerSide: scouts.Player1, UserID: ptr[UserID](1)},
+				PlayerLeftEvent{PlayerSide: scouts.Player1, UserID: ptr[user.UserID](1)},
 				GoingAwayEvent{},
 			}
 
@@ -193,16 +194,16 @@ func TestGameInstance(t *testing.T) {
 
 type testingGameInstance struct {
 	*gameInstance
-	User1 AuthorizedUser
-	User2 AuthorizedUser
+	User1 user.Authorized
+	User2 user.Authorized
 }
 
 func newTestingGameInstance(t *testing.T, opts CreateGameOptions) *testingGameInstance {
-	token1 := GenerateSessionToken()
-	token2 := GenerateSessionToken()
+	token1 := user.GenerateToken()
+	token2 := user.GenerateToken()
 
-	user1 := AuthorizedUser{User: ptr[UserID](1), session: token1}
-	user2 := AuthorizedUser{User: ptr[UserID](2), session: token2}
+	user1 := user.NewAnonymous(token1)
+	user2 := user.NewAnonymous(token2)
 
 	logger := slogt.New(t)
 	game := newGameInstance(opts, logger, nil)
@@ -214,15 +215,15 @@ func newTestingGameInstance(t *testing.T, opts CreateGameOptions) *testingGameIn
 	}
 }
 
-func (g *testingGameInstance) join(t *testing.T, player AuthorizedUser) (<-chan GameEvent, func()) {
+func (g *testingGameInstance) join(t *testing.T, player user.Authorized) (<-chan GameEvent, func()) {
 	ev, stop, err := g.PlayerJoinNext(player)
 	assert.NoError(t, err, "player should be able to join")
 	t.Cleanup(func() { stop() })
 	return ev, stop
 }
 
-func (g *testingGameInstance) move(t *testing.T, player AuthorizedUser, move scouts.Move) {
-	err := g.MakeMove(player.session, move)
+func (g *testingGameInstance) move(t *testing.T, user user.Authorized, move scouts.Move) {
+	err := g.MakeMove(user, move)
 	assert.NoError(t, err, "player should be able to make move")
 }
 
