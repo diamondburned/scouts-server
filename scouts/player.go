@@ -6,7 +6,7 @@ import "fmt"
 type Player int
 
 const (
-	_ Player = iota
+	PlayerNone Player = iota
 	PlayerA
 	PlayerB
 )
