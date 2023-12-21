@@ -20,13 +20,17 @@ type SessionStorage struct {
 
 var _ user.SessionStorage = (*SessionStorage)(nil)
 
-// NewSessionStorage creates a new session storage service.
-func NewSessionStorage(manager *StorageManager) (*SessionStorage, error) {
-	m, err := persist.NewMap[user.SessionToken, sessionMetadata](
-		badgerdb.Open, manager.pathFor("sessions"))
+func newSessionStorage(manager *StorageManager) (*SessionStorage, error) {
+	path, err := manager.pathFor("sessions")
 	if err != nil {
 		return nil, err
 	}
+
+	m, err := persist.NewMap[user.SessionToken, sessionMetadata](badgerdb.Open, path)
+	if err != nil {
+		return nil, err
+	}
+
 	return &SessionStorage{m: m}, nil
 }
 

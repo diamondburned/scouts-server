@@ -20,12 +20,12 @@ The server publicly exposes these endpoints:
 
 The server publicly exposes these endpoints:
 
-- `GET /api/v1/games`: list all games
-- `GET /api/v1/games/{id}`: get a game by ID
-- `GET /api/v1/games/{id}/events`: subscribe to events for a game using Server-Sent Events
-- `POST /api/v1/games`: create a new game
-- `POST /api/v1/games/{id}/join`: join a game
-- `POST /api/v1/games/{id}/move`: make a move in a game
+- `GET /api/v1/game`: list all games
+- `GET /api/v1/game/{id}`: get a game by ID
+- `GET /api/v1/game/{id}/events`: subscribe to events for a game using Server-Sent Events
+- `POST /api/v1/game`: create a new game
+- `POST /api/v1/game/{id}/join`: join a game
+- `POST /api/v1/game/{id}/move`: make a move in a game
 
 All the above endpoints require the following headers:
 
