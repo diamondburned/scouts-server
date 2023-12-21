@@ -30,11 +30,10 @@ func NewSessionStorage(manager *StorageManager) (*SessionStorage, error) {
 	return &SessionStorage{m: m}, nil
 }
 
-func (s *SessionStorage) CreateSession(userID user.UserID) (user.SessionToken, error) {
+func (s *SessionStorage) CreateSession() (user.SessionToken, error) {
 	for {
 		token := user.GenerateSessionToken()
 		_, exists, err := s.m.LoadOrStore(token, sessionMetadata{
-			userID: userID,
 			expiry: time.Now().Add(user.SessionTTL).Unix(),
 		})
 		if err != nil {
@@ -45,6 +44,18 @@ func (s *SessionStorage) CreateSession(userID user.UserID) (user.SessionToken, e
 		}
 		return token, nil
 	}
+}
+
+func (s *SessionStorage) ChangeSession(token user.SessionToken, userID user.UserID) error {
+	value, ok, err := s.m.Load(token)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return user.ErrSessionNotFound
+	}
+	value.userID = userID
+	return s.m.Store(token, value)
 }
 
 func (s *SessionStorage) QuerySession(token user.SessionToken) (user.UserID, error) {

@@ -53,9 +53,11 @@ const SessionTTL = 7 * 24 * time.Hour
 // SessionStorage is in charge of persisting and retrieving session data from a
 // database. A session may or may not be associated with a user.
 type SessionStorage interface {
-	// CreateSession creates a session with the given session ID and session
-	// metadata.
-	CreateSession(UserID) (SessionToken, error)
+	// CreateSession creates a session with the given session ID.
+	CreateSession() (SessionToken, error)
+	// ChangeSession changes the user that the session is associated with.
+	// This is useful when a user logs in or logs out.
+	ChangeSession(SessionToken, UserID) error
 	// QuerySession queries the session with the given session ID.
 	QuerySession(SessionToken) (UserID, error)
 }
