@@ -42,9 +42,9 @@ func (u *UserID) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Authorized is a struct that contains the session token and the user ID
+// Authorization is a struct that contains the session token and the user ID
 // for an authorized user.
-type Authorized struct {
+type Authorization struct {
 	// UserID is the ID of the user.
 	// If this is nil, then the user is anonymous.
 	UserID  *UserID `json:"user_id,omitempty"`
@@ -52,23 +52,23 @@ type Authorized struct {
 }
 
 // NewAuthorized creates a new authorized user.
-func NewAuthorized(session SessionToken, user UserID) Authorized {
-	return Authorized{
+func NewAuthorized(session SessionToken, user UserID) Authorization {
+	return Authorization{
 		UserID:  &user,
 		session: session,
 	}
 }
 
 // NewAnonymous creates a new anonymous authorized user.
-func NewAnonymous(session SessionToken) Authorized {
-	return Authorized{
+func NewAnonymous(session SessionToken) Authorization {
+	return Authorization{
 		session: session,
 	}
 }
 
 // OptionalAuthorizedUserString returns the string representation of the
 // authorized user or "<nil>" if the authorized user is nil.
-func OptionalAuthorizedUserString(user *Authorized) string {
+func OptionalAuthorizedUserString(user *Authorization) string {
 	if user == nil {
 		return "<nil>"
 	}
@@ -76,13 +76,13 @@ func OptionalAuthorizedUserString(user *Authorized) string {
 }
 
 // Session returns the session token.
-func (u Authorized) Session() SessionToken {
+func (u Authorization) Session() SessionToken {
 	return u.session
 }
 
 // String returns the string representation of the authorized user.
 // The token is truncated to 8 characters.
-func (u Authorized) String() string {
+func (u Authorization) String() string {
 	str := u.session.String()
 	if u.UserID != nil {
 		str += fmt.Sprintf("[%s]", *u.UserID)
@@ -94,6 +94,6 @@ func (u Authorized) String() string {
 
 // Eq returns true if the authorized user is equal to the other authorized
 // user. It only compares the token.
-func (u Authorized) Eq(other Authorized) bool {
+func (u Authorization) Eq(other Authorization) bool {
 	return u.session == other.session
 }

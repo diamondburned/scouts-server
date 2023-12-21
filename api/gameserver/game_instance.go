@@ -196,7 +196,7 @@ func (g *gameInstance) startIfReady() {
 	}(g.stopCh)
 }
 
-func (g *gameInstance) MakeMove(user user.Authorized, move scouts.Move) error {
+func (g *gameInstance) MakeMove(user user.Authorization, move scouts.Move) error {
 	now := g.clock.Now()
 
 	g.mu.Lock()
@@ -247,7 +247,7 @@ func (g *gameInstance) StateSnapshot() GameState {
 	return s
 }
 
-func (g *gameInstance) PlayerJoinNext(user user.Authorized) (<-chan GameEvent, func(), error) {
+func (g *gameInstance) PlayerJoinNext(user user.Authorization) (<-chan GameEvent, func(), error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 

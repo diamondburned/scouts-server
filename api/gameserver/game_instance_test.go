@@ -194,8 +194,8 @@ func TestGameInstance(t *testing.T) {
 
 type testingGameInstance struct {
 	*gameInstance
-	User1 user.Authorized
-	User2 user.Authorized
+	User1 user.Authorization
+	User2 user.Authorization
 }
 
 func newTestingGameInstance(t *testing.T, opts CreateGameOptions) *testingGameInstance {
@@ -215,14 +215,14 @@ func newTestingGameInstance(t *testing.T, opts CreateGameOptions) *testingGameIn
 	}
 }
 
-func (g *testingGameInstance) join(t *testing.T, player user.Authorized) (<-chan GameEvent, func()) {
+func (g *testingGameInstance) join(t *testing.T, player user.Authorization) (<-chan GameEvent, func()) {
 	ev, stop, err := g.PlayerJoinNext(player)
 	assert.NoError(t, err, "player should be able to join")
 	t.Cleanup(func() { stop() })
 	return ev, stop
 }
 
-func (g *testingGameInstance) move(t *testing.T, user user.Authorized, move scouts.Move) {
+func (g *testingGameInstance) move(t *testing.T, user user.Authorization, move scouts.Move) {
 	err := g.MakeMove(user, move)
 	assert.NoError(t, err, "player should be able to make move")
 }
