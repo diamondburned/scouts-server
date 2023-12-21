@@ -70,6 +70,8 @@ type CachedSessionStorage struct {
 	cache   xsync.MapOf[SessionToken, cachedSession]
 }
 
+var _ SessionStorage = (*CachedSessionStorage)(nil)
+
 // SessionCacheTTL is the time-to-live of a session cache entry.
 // This should be less than SessionTTL.
 const SessionCacheTTL = 5 * time.Minute
@@ -81,6 +83,9 @@ type cachedSession struct {
 
 // NewCachedSessionStorage creates a new cached session storage.
 func NewCachedSessionStorage(storage SessionStorage) *CachedSessionStorage {
+	if cached, ok := storage.(*CachedSessionStorage); ok {
+		return cached
+	}
 	return &CachedSessionStorage{
 		storage: storage,
 		cache:   *xsync.NewMapOf[SessionToken, cachedSession](),

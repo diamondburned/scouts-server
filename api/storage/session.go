@@ -9,7 +9,7 @@ import (
 )
 
 type sessionMetadata struct {
-	userID user.UserID
+	userID *user.UserID
 	expiry int64
 }
 
@@ -46,7 +46,7 @@ func (s *SessionStorage) CreateSession() (user.SessionToken, error) {
 	}
 }
 
-func (s *SessionStorage) ChangeSession(token user.SessionToken, userID user.UserID) error {
+func (s *SessionStorage) ChangeSession(token user.SessionToken, userID *user.UserID) error {
 	value, ok, err := s.m.Load(token)
 	if err != nil {
 		return err
@@ -58,16 +58,13 @@ func (s *SessionStorage) ChangeSession(token user.SessionToken, userID user.User
 	return s.m.Store(token, value)
 }
 
-func (s *SessionStorage) QuerySession(token user.SessionToken) (user.UserID, error) {
+func (s *SessionStorage) QuerySession(token user.SessionToken) (*user.UserID, error) {
 	value, ok, err := s.m.Load(token)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	if !ok {
-		return 0, user.ErrSessionNotFound
-	}
-	if value.expiry < time.Now().Unix() {
-		return 0, user.ErrSessionNotFound
+	if !ok || value.expiry < time.Now().Unix() {
+		return nil, user.ErrSessionNotFound
 	}
 	return value.userID, nil
 }
