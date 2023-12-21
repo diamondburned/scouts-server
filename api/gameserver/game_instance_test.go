@@ -199,8 +199,8 @@ type testingGameInstance struct {
 }
 
 func newTestingGameInstance(t *testing.T, opts CreateGameOptions) *testingGameInstance {
-	token1 := user.GenerateToken()
-	token2 := user.GenerateToken()
+	token1 := user.GenerateSessionToken()
+	token2 := user.GenerateSessionToken()
 
 	user1 := user.NewAnonymous(token1)
 	user2 := user.NewAnonymous(token2)

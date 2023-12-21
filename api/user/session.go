@@ -15,8 +15,8 @@ var ErrSessionNotFound = hrt.NewHTTPError(401, "session not found")
 // SessionToken is a type that represents a session token.
 type SessionToken [24]byte
 
-// GenerateToken generates a new session token.
-func GenerateToken() SessionToken {
+// GenerateSessionToken generates a new session token.
+func GenerateSessionToken() SessionToken {
 	var token SessionToken
 	_, err := rand.Read(token[:])
 	if err != nil {
