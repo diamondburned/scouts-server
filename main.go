@@ -70,6 +70,10 @@ func start(ctx context.Context, logger *slog.Logger) error {
 	r := chi.NewMux()
 	r.Mount("/api/v1", api)
 
+	logger.Info(
+		"starting server",
+		"addr", httpAddr)
+
 	if err := hserve.ListenAndServe(ctx, httpAddr, r); err != nil {
 		return fmt.Errorf("failed to listen and serve: %w", err)
 	}
