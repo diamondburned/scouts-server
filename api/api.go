@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"libdb.so/hrt"
 	"libdb.so/scouts-server/api/gameserver"
 	"libdb.so/scouts-server/api/user"
@@ -32,7 +33,15 @@ func NewHandler(service Services) *Handler {
 	h := &Handler{service: service}
 
 	h.Mux = chi.NewRouter()
-	h.With(
+
+	h.Use(
+		middleware.Logger,
+		cors.Handler(cors.Options{
+			AllowedOrigins:   []string{"https://*", "http://*"},
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"*"},
+			AllowCredentials: true,
+		}),
 		middleware.CleanPath,
 		middleware.RealIP,
 		middleware.Recoverer,

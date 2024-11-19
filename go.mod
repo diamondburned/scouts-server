@@ -3,7 +3,7 @@ module libdb.so/scouts-server
 go 1.21.5
 
 require (
-	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/chi/v5 v5.1.0
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 )
 
@@ -11,6 +11,7 @@ require github.com/oklog/ulid/v2 v2.1.0
 
 require (
 	github.com/alecthomas/assert/v2 v2.4.1
+	github.com/go-chi/cors v1.2.1
 	github.com/godruoyi/go-snowflake v0.0.2
 	github.com/lmittmann/tint v1.0.3
 	github.com/mattn/go-isatty v0.0.20
