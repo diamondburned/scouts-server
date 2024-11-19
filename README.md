@@ -22,7 +22,7 @@ The server publicly exposes these endpoints:
 
 - `GET /api/v1/game`: list all games
 - `GET /api/v1/game/{id}`: get a game by ID
-- `GET /api/v1/game/{id}/events`: subscribe to events for a game using Server-Sent Events
+- `GET /api/v1/game/{id}/subscribe`: subscribe to events for a game using Server-Sent Events
 - `POST /api/v1/game`: create a new game
 - `POST /api/v1/game/{id}/join`: join a game
 - `POST /api/v1/game/{id}/move`: make a move in a game
