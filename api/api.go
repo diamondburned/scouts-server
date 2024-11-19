@@ -34,14 +34,14 @@ func NewHandler(service Services) *Handler {
 
 	h.Mux = chi.NewRouter()
 
-	h.Mux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		AllowCredentials: true,
-	}))
-
-	h.With(
+	h.Use(
+		middleware.Logger,
+		cors.Handler(cors.Options{
+			AllowedOrigins:   []string{"https://*", "http://*"},
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"*"},
+			AllowCredentials: true,
+		}),
 		middleware.CleanPath,
 		middleware.RealIP,
 		middleware.Recoverer,
