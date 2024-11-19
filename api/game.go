@@ -92,13 +92,19 @@ func (h *gameHandler) joinGame(ctx context.Context, _ hrt.None) (hrt.None, error
 }
 
 type makeMoveRequest struct {
-	Move scouts.Move `json:"move"`
+	Move string `json:"move"`
 }
 
 func (h *gameHandler) makeMove(ctx context.Context, req makeMoveRequest) (hrt.None, error) {
 	gameID := context.From[gameserver.GameID](ctx)
 	authorization := context.From[user.Authorization](ctx)
-	return hrt.Empty, h.service.MakeMove(authorization, gameID, req.Move)
+
+	move, err := scouts.ParseMove(req.Move)
+	if err != nil {
+		return hrt.Empty, err
+	}
+
+	return hrt.Empty, h.service.MakeMove(authorization, gameID, move)
 }
 
 var errNoFlusher = hrt.NewHTTPError(400, "client does not support Server-Sent Events")
