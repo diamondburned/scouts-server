@@ -62,7 +62,9 @@ func NewHandler(service Services) *Handler {
 func (h *Handler) authorize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var token user.SessionToken
+
 		if cookie, err := r.Cookie("session"); err == nil {
+			// session cookie is set
 			t, err := unmarshal.Text[*user.SessionToken](cookie.Value)
 			if err != nil {
 				errorWriter.WriteError(w, err)
@@ -70,16 +72,23 @@ func (h *Handler) authorize(next http.Handler) http.Handler {
 			}
 			token = *t
 		} else {
+			// session cookie is not set, so we create one
 			t, err := h.service.CreateSession()
+			if err != nil {
+				errorWriter.WriteError(w, err)
+				return
+			}
+			tokenBytes, err := t.MarshalText()
 			if err != nil {
 				errorWriter.WriteError(w, err)
 				return
 			}
 			http.SetCookie(w, &http.Cookie{
 				Name:     "session",
-				Value:    t.String(),
+				Value:    string(tokenBytes),
 				MaxAge:   int(user.SessionTTL / time.Second),
-				SameSite: http.SameSiteStrictMode,
+				SameSite: http.SameSiteNoneMode,
+				Secure:   true,
 			})
 			token = t
 		}
