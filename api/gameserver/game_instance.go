@@ -200,6 +200,10 @@ func (g *gameInstance) startIfReady() {
 }
 
 func (g *gameInstance) MakeMove(authorization user.Authorization, move scouts.Move) error {
+	if g.state.BeganAt == nil {
+		return fmt.Errorf("%w: less than two players in game", ErrInvalidGameState)
+	}
+
 	now := g.clock.Now()
 
 	g.mu.Lock()
