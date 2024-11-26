@@ -61,16 +61,9 @@ func (m *JumpMove) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (m *JumpMove) cost(game *Game) int {
-	if len(game.currentTurn.Moves) > 0 {
-		lastMove := game.currentTurn.Moves[len(game.currentTurn.Moves)-1]
-		if jump, ok := lastMove.(*JumpMove); ok && jump.Destination == m.ScoutPosition {
-			// This jump is free because we're jumping the same scout as the last
-			// jump.
-			return 0
-		}
-	}
-	return 1
+// TODO: this needs to be updated. Jumping should only cost a play if the piece was flipped
+func (m *JumpMove) cost(_ *Game) int {
+	return 0
 }
 
 // Apply applies the move to the board.
@@ -148,7 +141,8 @@ func (m *JumpMove) apply(game *Game) {
 		}
 	}
 
-	game.addMove(m, m.cost(game))
+	// game.addMove(m, m.cost(game))
+	game.addMove(m, 0)
 }
 
 func abs[T constraints.Integer](x T) T {
