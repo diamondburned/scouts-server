@@ -20,6 +20,9 @@ var ErrGameFull = hrt.NewHTTPError(400, "game already has two players")
 // ErrInvalidMove is an error that is returned when a move is invalid.
 var ErrInvalidMove = hrt.NewHTTPError(400, "invalid move")
 
+// ErrInvalidMove is an error that is returned when a move is invalid.
+var ErrInvalidGameState = hrt.NewHTTPError(400, "invalid game state")
+
 // CreateGameOptions is a struct that contains options for creating a game.
 // All fields are optional.
 type CreateGameOptions struct {
