@@ -141,8 +141,7 @@ func (m *JumpMove) apply(game *Game) {
 		}
 	}
 
-	// game.addMove(m, m.cost(game))
-	game.addMove(m, 0)
+	game.addMove(m, m.cost(game))
 }
 
 func abs[T constraints.Integer](x T) T {

@@ -28,9 +28,9 @@ var ErrInvalidGameState = hrt.NewHTTPError(400, "invalid game state")
 type CreateGameOptions struct {
 	// TimeLimit is the time limit per side.
 	// If this is zero, then there is no time limit.
-	TimeLimit Duration
+	TimeLimit Duration `json:"time_limit"`
 	// Increment is the time increment per move.
-	Increment Duration
+	Increment Duration `json:"increment"`
 }
 
 // GameState is a struct that contains metadata about a game.
